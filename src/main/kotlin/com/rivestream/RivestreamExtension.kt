@@ -26,6 +26,9 @@ class RivestreamExtension(
 
     fun getLastErrorMessage(): String? = lastErrorMessage
 
+    /**
+     * TMDB metadata is preferred when duplicate TMDB IDs are found, with Rivestream data used as fallback.
+     */
     fun search(query: String, page: Int): List<ContentMetadata> {
         val state = settings.getState()
         val rivestreamResults =
@@ -47,8 +50,8 @@ class RivestreamExtension(
             }
 
         val merged = linkedMapOf<Int, ContentMetadata>()
-        tmdbResults.forEach { merged[it.tmdbId] = it }
-        rivestreamResults.forEach { merged.putIfAbsent(it.tmdbId, it) }
+        tmdbResults.filter { it.tmdbId > 0 }.forEach { merged[it.tmdbId] = it }
+        rivestreamResults.filter { it.tmdbId > 0 }.forEach { merged.putIfAbsent(it.tmdbId, it) }
 
         return merged.values.toList()
     }

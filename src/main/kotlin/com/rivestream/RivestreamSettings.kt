@@ -16,6 +16,7 @@ class RivestreamSettings(
         private const val DEFAULT_QUALITY = "Auto"
         private const val DEFAULT_LANGUAGE = "en"
         private const val DEFAULT_CACHE_MINUTES = 30
+        private val LANGUAGE_CODE_REGEX = Regex("^[a-z]{2}(-[a-z]{2})?$")
 
         val QUALITY_OPTIONS: List<String> = listOf("Auto", "1080p", "720p", "480p")
     }
@@ -69,7 +70,7 @@ class RivestreamSettings(
 
     fun updateLanguage(language: String): SettingsUiModel {
         val normalized = language.trim().lowercase()
-        val isValid = normalized.matches(Regex("^[a-z]{2}(-[a-z]{2})?$"))
+        val isValid = normalized.matches(LANGUAGE_CODE_REGEX)
         if (!isValid) {
             return getSettingsUi("Invalid language code. Use values like en or en-us")
         }

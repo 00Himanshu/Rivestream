@@ -12,7 +12,7 @@ sealed class RivestreamError(val userMessage: String) {
     data class RateLimited(val retryAfterSeconds: Int?) :
         RivestreamError(
             if (retryAfterSeconds != null) {
-                "Too many requests. Please retry in $retryAfterSeconds seconds."
+                "Too many requests. Please try again in $retryAfterSeconds second${if (retryAfterSeconds == 1) "" else "s"}."
             } else {
                 "Too many requests. Please try again shortly."
             },
@@ -30,6 +30,10 @@ class ErrorHandler(
     private val maxRetries: Int = 2,
     private val defaultRetryDelayMillis: Long = 500L,
 ) {
+    companion object {
+        private const val MAX_RETRY_DELAY_MILLIS: Long = 60_000L
+    }
+
     fun toError(throwable: Throwable): RivestreamError =
         when (throwable) {
             is RateLimitException -> RivestreamError.RateLimited(throwable.retryAfterSeconds)
@@ -56,7 +60,7 @@ class ErrorHandler(
 
                 val retryDelay = (error as? RateLimitException)?.retryAfterSeconds?.times(1000L)
                     ?: defaultRetryDelayMillis
-                Thread.sleep(retryDelay.coerceAtLeast(0L))
+                Thread.sleep(retryDelay.coerceIn(0L, MAX_RETRY_DELAY_MILLIS))
                 attempt++
             }
         }
