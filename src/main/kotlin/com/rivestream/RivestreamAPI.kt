@@ -1,7 +1,6 @@
 package com.rivestream
 
 import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
 import com.rivestream.models.ContentMetadata
 import com.rivestream.models.ContentType
 import com.rivestream.models.StreamLink
@@ -9,13 +8,13 @@ import com.rivestream.models.StreamResponse
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.io.IOException
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 class RivestreamAPI(
     private val httpClient: OkHttpClient = OkHttpClient(),
     private val gson: Gson = Gson(),
+    private val errorHandler: ErrorHandler = ErrorHandler(),
 ) {
     companion object {
         const val DEFAULT_ENDPOINT = "https://api.rivestream.org"
@@ -57,8 +56,7 @@ class RivestreamAPI(
                     year = item.year,
                 )
             }
-        } catch (e: Exception) {
-            println("[RivestreamAPI] Search failed: ${e.message}")
+        } catch (_: Throwable) {
             emptyList()
         }
     }
@@ -68,7 +66,7 @@ class RivestreamAPI(
             ?: return StreamResponse(success = false, message = "Invalid Rivestream endpoint")
 
         if (content.tmdbId <= 0) {
-            return StreamResponse(success = false, message = "TmdbId is required")
+            return StreamResponse(success = false, message = RivestreamError.MissingTmdbId.userMessage)
         }
 
         if (content.type == ContentType.TVSHOW && (content.season == null || content.episode == null)) {
@@ -104,9 +102,8 @@ class RivestreamAPI(
             } else {
                 StreamResponse(success = true, links = links, message = response.message)
             }
-        } catch (e: Exception) {
-            println("[RivestreamAPI] Stream fetch failed: ${e.message}")
-            StreamResponse(success = false, message = "Failed to fetch stream links")
+        } catch (e: Throwable) {
+            StreamResponse(success = false, message = errorHandler.toUserMessage(e))
         }
     }
 
@@ -130,28 +127,24 @@ class RivestreamAPI(
                     episode = episodeNumber,
                 )
             }
-        } catch (e: Exception) {
-            println("[RivestreamAPI] Episode fetch failed: ${e.message}")
+        } catch (_: Throwable) {
             emptyList()
         }
     }
 
     private fun get(url: String): String? {
         val request = Request.Builder().url(url).build()
-        return try {
+        return errorHandler.executeWithRetry {
             httpClient.newCall(request).execute().use { response ->
+                if (response.code == 429) {
+                    throw RateLimitException(response.header("Retry-After")?.toIntOrNull())
+                }
+
                 if (!response.isSuccessful) {
-                    println("[RivestreamAPI] HTTP ${response.code} for $url")
-                    return null
+                    return@executeWithRetry null
                 }
                 response.body?.string()
             }
-        } catch (ioe: IOException) {
-            println("[RivestreamAPI] Network failure: ${ioe.message}")
-            null
-        } catch (jse: JsonSyntaxException) {
-            println("[RivestreamAPI] JSON parsing failure: ${jse.message}")
-            null
         }
     }
 
