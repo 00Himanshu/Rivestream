@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.9.24"
+    id("java")
 }
 
 group = "com.rivestream"
@@ -38,4 +39,18 @@ tasks.withType<KotlinCompile>().configureEach {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.jar {
+    manifest {
+        attributes(
+            "Implementation-Title" to "Rivestream",
+            "Implementation-Version" to version,
+            "Implementation-Vendor" to "Rivestream Extension"
+        )
+    }
+}
+
+tasks.build {
+    dependsOn(tasks.jar)
 }
