@@ -4,4 +4,24 @@
     <string name="extension_name">Rivestream</string>
     <string name="extension_description">CloudStream 4.x extension for Rivestream movies and TV shows with configurable endpoints.</string>
     <string name="default_endpoint">https://api.rivestream.org</string>
+
+    <string name="settings_title">Rivestream Settings</string>
+    <string name="settings_api_endpoint">API Endpoint URL</string>
+    <string name="settings_default_quality">Default quality</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_cache_enabled">Enable cache</string>
+    <string name="settings_cache_duration">Cache duration (minutes)</string>
+
+    <string name="quality_auto">Auto</string>
+    <string name="quality_1080">1080p</string>
+    <string name="quality_720">720p</string>
+    <string name="quality_480">480p</string>
+
+    <string name="error_invalid_endpoint">Please enter a valid http/https endpoint URL</string>
+    <string name="error_invalid_quality">Invalid quality option</string>
+    <string name="error_invalid_language">Invalid language code. Use values like en or en-us</string>
+    <string name="error_invalid_cache_duration">Cache duration must be greater than zero</string>
+    <string name="error_network">Network error. Please check your internet connection.</string>
+    <string name="error_missing_tmdb">Unable to resolve TMDB ID for this title.</string>
+    <string name="error_rate_limited">Too many requests. Please try again shortly.</string>
 </resources>

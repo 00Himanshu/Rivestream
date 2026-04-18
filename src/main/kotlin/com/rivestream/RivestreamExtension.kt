@@ -6,54 +6,110 @@ import com.rivestream.models.StreamLink
 
 class RivestreamExtension(
     private val api: RivestreamAPI = RivestreamAPI(),
+    private val settings: RivestreamSettings = RivestreamSettings(),
+    private val tmdbClient: TMDBClient = TMDBClient(),
+    private val errorHandler: ErrorHandler = ErrorHandler(),
 ) {
-    private var configuredEndpoint: String = RivestreamAPI.DEFAULT_ENDPOINT
+    private var lastErrorMessage: String? = null
 
     fun getName(): String = "Rivestream"
 
     fun getDescription(): String =
         "CloudStream 4.x extension for Rivestream API with movie/TV search, " +
-            "stream and download links, episode support, and configurable endpoints."
+            "stream and download links, episode support, configurable endpoints, and TMDB integration."
 
-    fun getBaseUrl(): String = configuredEndpoint
+    fun getBaseUrl(): String = settings.getState().apiEndpoint
 
     fun getContentTypes(): Set<ContentType> = setOf(ContentType.MOVIE, ContentType.TVSHOW)
 
-    fun getTranslationLanguages(): Set<String> = setOf("en")
+    fun getTranslationLanguages(): Set<String> = setOf(settings.getState().language)
 
-    fun search(query: String, page: Int): List<ContentMetadata> =
-        api.search(endpoint = getBaseUrl(), query = query, page = page)
+    fun getLastErrorMessage(): String? = lastErrorMessage
+
+    fun search(query: String, page: Int): List<ContentMetadata> {
+        val state = settings.getState()
+        val rivestreamResults =
+            try {
+                api.search(endpoint = state.apiEndpoint, query = query, page = page)
+            } catch (error: Throwable) {
+                lastErrorMessage = errorHandler.toUserMessage(error)
+                emptyList()
+            }
+
+        val tmdbResults = tmdbClient.search(query = query, page = page, language = state.language)
+            .map { result ->
+                ContentMetadata(
+                    tmdbId = result.tmdbId,
+                    title = result.title,
+                    type = result.type,
+                    year = result.year,
+                )
+            }
+
+        val merged = linkedMapOf<Int, ContentMetadata>()
+        tmdbResults.forEach { merged[it.tmdbId] = it }
+        rivestreamResults.forEach { merged.putIfAbsent(it.tmdbId, it) }
+
+        return merged.values.toList()
+    }
 
     fun getStreamUrls(content: Content): List<StreamLink> {
-        val response = api.getStreams(getBaseUrl(), content.toMetadata())
-        return response.links
-    }
+        val state = settings.getState()
+        val resolvedTmdbId = content.tmdbId.takeIf { it > 0 }
+            ?: tmdbClient.resolveTmdbId(
+                title = content.title,
+                type = content.type,
+                year = content.year,
+                language = state.language,
+            )
 
-    fun getEpisodes(seasonContent: SeasonContent): List<ContentMetadata> =
-        api.getEpisodes(
-            endpoint = getBaseUrl(),
-            tmdbId = seasonContent.tmdbId,
-            season = seasonContent.season,
-        )
+        if (resolvedTmdbId == null || resolvedTmdbId <= 0) {
+            lastErrorMessage = RivestreamError.MissingTmdbId.userMessage
+            return emptyList()
+        }
 
-    fun getSettingsUi(): SettingsUiModel =
-        SettingsUiModel(
-            title = "Rivestream Settings",
-            endpointLabel = "API Endpoint",
-            endpointHint = RivestreamAPI.DEFAULT_ENDPOINT,
-            endpointValue = configuredEndpoint,
-            validationError = null,
-        )
+        val resolvedContent = content.copy(tmdbId = resolvedTmdbId).toMetadata()
 
-    fun updateEndpoint(endpointInput: String): SettingsUiModel {
-        val normalized = api.normalizeEndpoint(endpointInput)
-        return if (normalized != null) {
-            configuredEndpoint = normalized
-            getSettingsUi()
-        } else {
-            getSettingsUi().copy(validationError = "Please enter a valid http/https endpoint URL")
+        return try {
+            val response = api.getStreams(state.apiEndpoint, resolvedContent)
+            if (!response.success) {
+                lastErrorMessage = response.message ?: "Unable to fetch stream links"
+                emptyList()
+            } else {
+                lastErrorMessage = null
+                response.links
+            }
+        } catch (error: Throwable) {
+            lastErrorMessage = errorHandler.toUserMessage(error)
+            emptyList()
         }
     }
+
+    fun getEpisodes(seasonContent: SeasonContent): List<ContentMetadata> {
+        val state = settings.getState()
+        return try {
+            api.getEpisodes(
+                endpoint = state.apiEndpoint,
+                tmdbId = seasonContent.tmdbId,
+                season = seasonContent.season,
+            )
+        } catch (error: Throwable) {
+            lastErrorMessage = errorHandler.toUserMessage(error)
+            emptyList()
+        }
+    }
+
+    fun getSettingsUi(): SettingsUiModel = settings.getSettingsUi()
+
+    fun updateEndpoint(endpointInput: String): SettingsUiModel = settings.updateApiEndpoint(endpointInput)
+
+    fun updateDefaultQuality(quality: String): SettingsUiModel = settings.updateDefaultQuality(quality)
+
+    fun updateLanguage(language: String): SettingsUiModel = settings.updateLanguage(language)
+
+    fun updateCacheEnabled(enabled: Boolean): SettingsUiModel = settings.updateCacheEnabled(enabled)
+
+    fun updateCacheMinutes(minutes: Int): SettingsUiModel = settings.updateCacheMinutes(minutes)
 }
 
 data class Content(
@@ -78,12 +134,4 @@ data class Content(
 data class SeasonContent(
     val tmdbId: Int,
     val season: Int,
-)
-
-data class SettingsUiModel(
-    val title: String,
-    val endpointLabel: String,
-    val endpointHint: String,
-    val endpointValue: String,
-    val validationError: String?,
 )

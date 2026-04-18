@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plugin_id">com.rivestream</string>
+    <string name="plugin_name">Rivestream</string>
+    <string name="plugin_class_name">com.rivestream.RivestreamExtension</string>
+    <string name="plugin_description">CloudStream 4.x Rivestream extension</string>
+    <integer name="plugin_version">1</integer>
+    <string name="plugin_language">en</string>
+</resources>

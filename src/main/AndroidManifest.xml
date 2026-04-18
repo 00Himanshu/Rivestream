@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.rivestream">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application android:label="@string/extension_name">
+        <service
+            android:name="com.rivestream.RivestreamExtensionService"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.lagradost.cloudstream3.extension" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.lagradost.cloudstream3.extension.name"
+                android:value="@string/extension_name" />
+            <meta-data
+                android:name="com.lagradost.cloudstream3.extension.description"
+                android:value="@string/extension_description" />
+            <meta-data
+                android:name="com.lagradost.cloudstream3.extension.version"
+                android:value="1" />
+            <meta-data
+                android:name="com.lagradost.cloudstream3.extension.language"
+                android:value="en" />
+        </service>
+    </application>
+
+</manifest>

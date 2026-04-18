@@ -5,70 +5,61 @@ A CloudStream 4.x extension for integrating with the Rivestream API to stream an
 ## Features
 
 - Search support for movies and TV shows
+- TMDB-assisted search and TMDB ID resolution
 - Streaming and downloading link support
 - TV season/episode support
-- Mandatory `tmdbId` validation for API calls
-- English language support
-- Configurable Rivestream API endpoint (`https://api.rivestream.org` by default)
-- User-friendly endpoint validation and graceful failure handling
+- Configurable Rivestream API endpoint
+- Configurable quality, language, and cache preferences
+- User-friendly validation and error messages
+
+## Installation (CloudStream)
+
+1. Build the plugin:
+   ```bash
+   ./gradlew clean build
+   ```
+2. Publish the generated plugin artifact to your plugin repo/release.
+3. Add your `repository.json` URL in CloudStream repositories.
+4. Install **Rivestream** from CloudStream extension settings.
+
+## Configuration
+
+Open extension settings and configure:
+
+- **API Endpoint URL** (must be valid HTTP/HTTPS)
+- **Default quality** (`Auto`, `1080p`, `720p`, `480p`)
+- **Language** (for example `en` or `en-us`)
+- **Cache settings** (enabled + cache duration)
+
+## TMDB API Key Setup
+
+TMDB integration is enabled when `TMDB_API_KEY` is available in environment variables during runtime/build context.
+
+Example:
+
+```bash
+export TMDB_API_KEY="your_tmdb_api_key"
+```
+
+Without a TMDB key, the extension still works with Rivestream API data where available.
+
+## Troubleshooting
+
+- **Invalid endpoint**: verify URL starts with `http://` or `https://`.
+- **No streams found**: confirm TMDB ID mapping exists and endpoint is reachable.
+- **Rate limited**: wait and retry after the suggested backoff.
+- **Network errors**: verify internet connectivity and server availability.
 
 ## Project Structure
 
-- `build.gradle.kts` - Build config (Kotlin, Java 8, dependencies)
-- `settings.gradle.kts` - Gradle settings
+- `src/main/AndroidManifest.xml` - Extension manifest for CloudStream recognition
 - `src/main/kotlin/com/rivestream/RivestreamExtension.kt` - Main extension implementation
-- `src/main/kotlin/com/rivestream/RivestreamAPI.kt` - API client
+- `src/main/kotlin/com/rivestream/RivestreamSettings.kt` - Settings provider and settings UI models
+- `src/main/kotlin/com/rivestream/TMDBClient.kt` - TMDB integration
+- `src/main/kotlin/com/rivestream/ErrorHandler.kt` - Error handling and retry logic
 - `src/main/kotlin/com/rivestream/models/*` - Data models
-- `src/main/res/values/strings.xml` - Extension metadata strings
-- `repository.json` - CloudStream repository manifest
-
-## API Notes
-
-- Base endpoint is configurable and must be a valid HTTP(S) URL.
-- `tmdbId` is required.
-- TV stream calls require `season` and `episode`.
-- Returned links include quality, language, URL, and download flag.
-
-## Build
-
-```bash
-./gradlew clean build
-```
-
-## Usage (Code)
-
-```kotlin
-val extension = RivestreamExtension()
-extension.updateEndpoint("https://api.rivestream.org")
-
-val results = extension.search("interstellar", page = 1)
-
-val movieLinks = extension.getStreamUrls(
-    Content(
-        tmdbId = 157336,
-        title = "Interstellar",
-        type = ContentType.MOVIE,
-    )
-)
-```
-
-TV example:
-
-```kotlin
-val episodeLinks = extension.getStreamUrls(
-    Content(
-        tmdbId = 1399,
-        title = "Game of Thrones",
-        type = ContentType.TVSHOW,
-        season = 1,
-        episode = 1,
-    )
-)
-```
-
-## Endpoint Configuration
-
-Use `updateEndpoint(...)` to set custom Rivestream servers. Invalid values keep the previous endpoint and return validation feedback.
+- `src/main/res/values/strings.xml` - UI and error strings
+- `src/main/res/values/plugin.xml` - Plugin descriptor values
 
 ## License
 
