@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Rivestream</string>
+    <string name="extension_name">Rivestream</string>
+    <string name="extension_description">CloudStream 4.x extension for Rivestream movies and TV shows with configurable endpoints.</string>
+    <string name="default_endpoint">https://api.rivestream.org</string>
+</resources>
