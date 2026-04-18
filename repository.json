@@ -1,0 +1,15 @@
+{
+  "name": "Rivestream Repository",
+  "description": "CloudStream extension repository for Rivestream API",
+  "manifestVersion": 1,
+  "plugins": [
+    {
+      "name": "Rivestream",
+      "description": "CloudStream 4.x Rivestream extension with movie and TV support",
+      "version": 1,
+      "language": "en",
+      "status": 1,
+      "url": "https://github.com/00Himanshu/Rivestream/releases/latest/download/rivestream.cs3"
+    }
+  ]
+}
