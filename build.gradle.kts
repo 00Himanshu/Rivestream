@@ -11,12 +11,12 @@ version = "1.0.0"
 
 repositories {
     mavenCentral()
-    google()
     maven("https://jitpack.io")
 }
 
 dependencies {
     implementation(kotlin("stdlib"))
+    implementation("com.github.recloudstream:cloudstream:latest")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.code.gson:gson:2.11.0")
 
@@ -42,6 +42,7 @@ tasks.test {
 }
 
 tasks.jar {
+    destinationDirectory.set(layout.buildDirectory.dir("outputs"))
     manifest {
         attributes(
             "Implementation-Title" to "Rivestream",
