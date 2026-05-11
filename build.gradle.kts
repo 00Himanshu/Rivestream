@@ -1,57 +1,106 @@
+import com.android.build.api.dsl.LibraryExtension
+import com.lagradost.cloudstream3.gradle.CloudstreamExtension
+import org.gradle.api.plugins.JavaPluginExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
-plugins {
-    kotlin("jvm") version "1.9.24"
-    id("java")
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://jitpack.io")
+    }
+
+    dependencies {
+        classpath("com.android.tools.build:gradle:9.1.1")
+        classpath("com.github.recloudstream:gradle:master-SNAPSHOT")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.21")
+    }
 }
 
-group = "com.rivestream"
-version = "1.0.0"
-
 repositories {
+    google()
     mavenCentral()
     maven("https://jitpack.io")
 }
 
-dependencies {
-    implementation(kotlin("stdlib"))
-    implementation("com.github.recloudstream:cloudstream:latest")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.google.code.gson:gson:2.11.0")
-
-    testImplementation(kotlin("test"))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.10.2")
+plugins {
+    id("com.android.library")
+    id("com.lagradost.cloudstream3.gradle")
+    kotlin("android")
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+// use an integer for version numbers
+version = 1
+
+fun Project.cloudstream(configuration: CloudstreamExtension.() -> Unit) =
+    extensions.getByName<CloudstreamExtension>("cloudstream").configuration()
+
+fun Project.android(configuration: LibraryExtension.() -> Unit) {
+    extensions.getByName<LibraryExtension>("android").apply {
+        project.extensions.findByType(JavaPluginExtension::class.java)?.apply {
+            toolchain {
+                languageVersion.set(JavaLanguageVersion.of(17))
+            }
+        }
+
+        configuration()
+    }
+}
+
+cloudstream {
+    setRepo(System.getenv("GITHUB_REPOSITORY") ?: "https://github.com/00Himanshu/Rivestream")
+    description = "Rivestream API extension for movies and TV shows"
+    language = "en"
+    authors = listOf("00Himanshu")
+    status = 1
+    tvTypes = listOf("Movie", "TvSeries")
+    isCrossPlatform = true
+}
+
+android {
+    namespace = "com.rivestream"
+    compileSdk = 36
+
+    defaultConfig {
+        minSdk = 21
+    }
+
+    lint {
+        targetSdk = 36
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    tasks.withType<KotlinJvmCompile> {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_1_8)
+            freeCompilerArgs.addAll(
+                "-Xno-call-assertions",
+                "-Xno-param-assertions",
+                "-Xno-receiver-assertions",
+                "-Xannotation-default-target=param-property"
+            )
+        }
+    }
 }
 
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_1_8)
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
 
-tasks.test {
-    useJUnitPlatform()
-}
+dependencies {
+    val implementation by configurations
+    val cloudstream by configurations
 
-tasks.jar {
-    destinationDirectory.set(layout.buildDirectory.dir("outputs"))
-    manifest {
-        attributes(
-            "Implementation-Title" to "Rivestream",
-            "Implementation-Version" to version,
-            "Implementation-Vendor" to "Rivestream Extension"
-        )
-    }
-}
-
-tasks.build {
-    dependsOn(tasks.jar)
+    cloudstream("com.lagradost:cloudstream3:pre-release")
+    implementation(kotlin("stdlib"))
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.code.gson:gson:2.11.0")
 }
