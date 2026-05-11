@@ -52,7 +52,9 @@ Without a TMDB key, the extension still works with Rivestream API data where ava
 
 ## Project Structure
 
-- `src/main/AndroidManifest.xml` - Extension manifest for CloudStream recognition
+- `build.gradle.kts` - Cloudstream gradle configuration + extension metadata
+- `src/main/AndroidManifest.xml` - Minimal manifest for Cloudstream plugin module
+- `src/main/kotlin/com/rivestream/RivestreamProvider.kt` - `@CloudstreamPlugin` entrypoint
 - `src/main/kotlin/com/rivestream/RivestreamExtension.kt` - Main extension implementation
 - `src/main/kotlin/com/rivestream/RivestreamSettings.kt` - Settings provider and settings UI models
 - `src/main/kotlin/com/rivestream/TMDBClient.kt` - TMDB integration
